@@ -1,0 +1,64 @@
+﻿{
+  "database":
+    {
+      "server":"dcrxcpr",
+      "name":"CPRTEST",
+      "username":"cpr_user",
+      "password":"cpruser"},
+      "tables":
+      {
+        "HR":
+        [
+          "MRN",
+          "FIRST_NAME",
+          "LAST_NAME",
+          "ADDRESS",
+          "CITY",
+          "STATE",
+          "ZIP",
+          "ADDRESS2",
+          "CITY2",
+          "STATE2",
+          "ZIP2",
+          "PHONE",
+          "COUNTY",
+          "DOB",
+          "SSN",
+          "SEX",
+          "LANGUAGE"
+          ]
+      },
+    "json_mapping":
+    {
+       "HR":
+       {
+         "MRN": "external_id"
+       }
+    },
+    "amqp":
+    {
+        "server": {
+            "protocol": "amqps",
+            "host": "envpmq001.envoymobile.net",
+            "port": "5671"
+        },
+        "vhost": {
+            "sync_module": 
+                    {
+                        "name": "sync",
+                        "exchange_name": "sync",
+                        "queue_name": "ecpr-cur,ebridge-cud"
+                    },
+            "control_module": 
+                    {
+                        "name": "control",
+                        "exchange_name": "control",
+                        "queue_name": "ecpr-config"
+                    }
+        },
+        "account": {
+            "username": "ecpr",
+            "password": "Test@1"
+        }
+    }
+}

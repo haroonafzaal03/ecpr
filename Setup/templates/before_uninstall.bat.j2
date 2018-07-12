@@ -1,0 +1,6 @@
+net stop "ECPR Sync {{ customer_code }} {{ release_for }}"
+@echo off
+echo Please waiting until ECPR Sync {{ customer_code }} {{ release_for }} service is fully stopped (in 30 seconds) ...
+timeout /t 30 /nobreak > NUL
+ECPR.exe -u
+ECPR.exe -c

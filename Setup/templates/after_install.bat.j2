@@ -1,0 +1,5 @@
+icacls.exe "C:\Program Files\ECPR{{ customer_code }}{{ release_for_code }}" /grant "NETWORK SERVICE:(F)"
+icacls.exe "C:\Program Files\ECPR{{ customer_code }}{{ release_for_code }}\*.*" /grant "NETWORK SERVICE:(F)"
+icacls.exe ECPR.exe /grant "NETWORK SERVICE:(F)"
+ECPR.exe -i
+net start "ECPR Sync {{ customer_code }} {{ release_for }}"

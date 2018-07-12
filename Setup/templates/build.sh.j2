@@ -1,0 +1,17 @@
+#!/bin/bash
+
+mkdir -p ../CPRPCA/bin/Setup
+
+rm -rf ../CPRPCA/bin/Setup/*
+
+cp ../CPRPCA/bin/Debug/* ../CPRPCA/bin/Setup/
+cp ../CPRPCA/NLog.config ../CPRPCA/bin/Setup/
+rm -rf ../CPRPCA/bin/Setup\ECPR.exe.config
+
+
+{% for c in customers_spec %}
+wine /home/ecpr/inno_setup_5/ISCC.exe /O"output" "output\ECPRSetup_{{ c.customer_code }}.iss"
+wine /home/ecpr/inno_setup_5/ISCC.exe /O"output" "output\ECPRUpdate_{{ c.customer_code }}.iss"
+{% endfor %}
+
+scp output/*.exe buildbot@dist.envoymobile.net:/var/www/ecpr/

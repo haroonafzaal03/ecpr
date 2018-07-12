@@ -1,0 +1,132 @@
+#define MyAppName "ECPR ({{ customer_code }} {{ release_for }})"
+#define MyAppDirName "ECPR{{ customer_code }}{{ release_for_code }}"
+#define MyAppVersion "{{ app_version }}"
+#define MyAppPublisher "Envoy Mobile"
+#define MyAppURL "http://www.envoymobile.com/"
+#define MyAppServiceName "Envoy ECPR Sync {{ release_for }}"
+
+#define ServiceConfigURL "{{ config_url }}"
+
+#define ServiceName "ECPR Sync {{ customer_code }} {{ release_for }}"
+#define ServiceDescription "Envoy ECPR Sync {{ customer_code }} {{ release_for }}"
+#define ServiceDisplayName "Envoy ECPR Sync {{ customer_code }} {{ release_for }}"
+#define ServiceHTTPBasicAuthUsername "{{ config_auth.username }}"
+#define ServiceHTTPBasicAuthPassword "{{ config_auth.password }}"
+
+[Setup]
+AppId="27DD4E40-F140-4B81-AA1D-D058562A7FD5"
+AppName={#MyAppName}
+AppVersion={#MyAppVersion}
+AppVerName={#MyAppName} {#MyAppVersion}
+AppPublisher={#MyAppPublisher}
+AppPublisherURL={#MyAppURL}
+AppSupportURL={#MyAppURL}
+AppUpdatesURL={#MyAppURL}
+DefaultDirName={pf}\{#MyAppDirName}
+DefaultGroupName={#MyAppName}
+DisableProgramGroupPage=yes
+OutputBaseFilename=ECPRUpdate_{#MyAppVersion}_{{ customer_code }}_{{ release_for }}
+SolidCompression=yes
+Compression=lzma
+
+PrivilegesRequired=admin
+ArchitecturesAllowed=x64
+ArchitecturesInstallIn64BitMode=x64
+
+DisableReadyPage=yes
+DisableReadyMemo=no
+DisableDirPage=yes
+
+UsePreviousAppDir=no
+
+SetupLogging=yes
+
+InfoBeforeFile="..\scripts\{{ customer_code }}\{{ release_for }}\README.txt"
+
+Uninstallable=no
+
+WizardSmallImageFile="logo\ecpr_logo.bmp"
+
+
+[Languages]
+Name: "en"; MessagesFile: "compiler:Default.isl"
+
+[Files]
+{% if os_type == 'Linux' %}
+Source: "..\..\CPRPCA\bin\Setup\*"; DestDir: "{app}"; AfterInstall: AfterUpdateProc; BeforeInstall: BeforeUpdateProc; Flags: ignoreversion recursesubdirs createallsubdirs
+{% else %}
+Source: "..\..\CPRPCA\bin\Setup\*"; DestDir: "{app}"; AfterInstall: AfterUpdateProc; BeforeInstall: BeforeUpdateProc; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\scripts\{{ customer_code }}\{{ release_for }}\*"; DestDir: "{app}"
+Source: "C:\Windows\Fonts\tahoma.ttf"; DestDir: "{fonts}"; FontInstall: "Tahoma"; Flags: onlyifdoesntexist uninsneveruninstall
+{% endif %}
+
+[Messages]
+ReadyLabel1=Update ready to be setup.
+SetupWindowTitle=Update {#ServiceName} to {{ app_version }}
+InfoBeforeClickLabel=When you are ready to continue with Update, click Next.
+
+[Run]
+Filename: "{app}\after_update.bat"; Flags: shellexec runhidden waituntilterminated
+
+[UninstallRun]
+Filename: "{app}\before_uninstall.bat"; Flags: shellexec runhidden waituntilterminated
+
+[UninstallDelete]
+Type: files; Name: "{app}\*.*"
+
+[Code]
+
+const
+data = '<?xml version="1.0" encoding="utf-8" ?>' +
+'<configuration>' +
+'  <appSettings>' +
+'    <add key="ecpr_service_name" value="{#ServiceName}"/>' +
+'    <add key="ecpr_service_description" value="{#ServiceDescription}"/>' +
+'    <add key="ecpr_service_displayname" value="{#ServiceDisplayName}"/>' +
+'    <add key="ecpr_config_url" value="{#ServiceConfigURL}" />' +
+'    <add key="ecpr_is_fetched" value="true" />' +
+'    <add key="ecpr_http_basic_auth_username" value="{#ServiceHTTPBasicAuthUsername}"/>' +
+'    <add key="ecpr_http_basic_auth_password" value="{#ServiceHTTPBasicAuthPassword}"/>' +
+'    <add key="ecpr_customer_code" value="{{ customer_code }}" />' +
+'    <add key="ecpr_customer_environment" value="{{ release_for_code }}" />' +
+'    <add key="AWSAccessKey" value="{{ AWS_S2_ACCESS_KEY_ID }}" />' +
+'    <add key="AWSSecretKey" value="{{ AWS_S2_SECRET_ACCESS_KEY }}" />' +
+'    <add key="AWSRegion" value="us-west-2" />' +
+'  </appSettings>' +
+'</configuration>';
+
+procedure AfterUpdateProc;
+var
+  ResultCode: Integer;
+begin
+  SaveStringToFile(ExpandConstant('{app}\ECPR.exe.config'), data, False);
+  if Exec('net start "ECPR Sync {{ release_for }}"', '', '', SW_SHOW, ewWaitUntilTerminated, ResultCode) then
+  begin
+  end else
+  begin
+  end
+end;
+
+procedure BeforeUpdateProc;
+var
+  ResultCode: Integer;
+begin
+  if Exec('net stop "ECPR Sync {{ release_for }}"', '', '', SW_SHOW, ewWaitUntilTerminated, ResultCode) then
+  begin
+  end else
+  begin
+  end
+end;
+
+function InitializeSetup: Boolean;
+begin
+  if (DirExists('C:\\Program Files\\{#MyAppDirName}')) then
+  begin
+    Result := True;  
+  end else
+  begin
+    MsgBox('This update is requires {#MyAppName} to be installed. The setup of update will be terminated.', mbCriticalError, MB_OK);
+    Result := False;
+  end
+end;
+

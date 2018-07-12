@@ -1,0 +1,21 @@
+@echo off
+echo "Copy build files to Setup folder"
+xcopy /y ..\CPRPCA\bin\{{ app_configuration }}\*.* ..\CPRPCA\bin\Setup\
+del ..\CPRPCA\bin\Setup\*config*.*
+del ..\CPRPCA\bin\Setup\*logs*.*
+del ..\CPRPCA\bin\Setup\ECPR.exe.config
+copy ..\CPRPCA\NLog.config ..\CPRPCA\bin\Setup\
+
+echo "Building ECPR setup files..."
+mkdir ..\{{ app_configuration }}\setup\latest
+mkdir ..\{{ app_configuration }}\update\latest
+
+{% for c in customers_spec %}
+"C:\Program Files (x86)\Inno Setup 5\ISCC.exe" /O"..\{{ app_configuration }}\setup\{{ c.app_version }}\{{ c.customer_code }}" "output\ECPRSetup_{{ c.customer_code }}_{{ c.release_for }}.iss"
+"C:\Program Files (x86)\Inno Setup 5\ISCC.exe" /O"..\{{ app_configuration }}\update\{{ c.app_version }}\{{ c.customer_code }}" "output\ECPRUpdate_{{ c.customer_code }}_{{ c.release_for }}.iss"
+
+xcopy /y ..\{{ app_configuration }}\setup\{{ c.app_version }}\{{ c.customer_code }}\ECPRSetup_*.exe ..\{{ app_configuration }}\setup\latest\{{ c.customer_code }}\
+xcopy /y ..\{{ app_configuration }}\update\{{ c.app_version }}\{{ c.customer_code }}\ECPRUpdate_*.exe ..\{{ app_configuration }}\update\latest\{{ c.customer_code }}\
+{% endfor %}
+
+echo "Done!"

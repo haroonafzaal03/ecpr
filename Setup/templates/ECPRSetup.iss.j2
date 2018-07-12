@@ -1,0 +1,218 @@
+;
+; This setup script is required Inno Setup have installed to compile.
+; http://www.jrsoftware.org/isdl.php
+;
+; After built this script then it should be generated the setup file:
+; ECPRSetup.exe (bundle setup).
+;
+
+#define MyAppName "ECPR ({{ customer_code }} {{ release_for }})"
+#define MyAppDirName "ECPR{{ customer_code }}{{ release_for_code }}"
+#define MyAppVersion "{{ app_version }}"
+#define MyAppPublisher "Envoy Mobile"
+#define MyAppURL "http://www.envoymobile.com/"
+
+#define ServiceConfigURL "{{ config_url }}"
+
+#define ServiceName "ECPR Sync {{ customer_code }} {{ release_for }}"
+#define ServiceDescription "Envoy ECPR Sync {{ customer_code }} {{ release_for }}"
+#define ServiceDisplayName "Envoy ECPR Sync {{ customer_code }} {{ release_for }}"
+#define ServiceHTTPBasicAuthUsername "{{ config_auth.username }}"
+#define ServiceHTTPBasicAuthPassword "{{ config_auth.password }}"
+
+
+[Setup]
+AppId="27DD4E40-F140-4B81-AA1D-D058562A7FD5"
+AppName={#MyAppName}
+AppVersion={#MyAppVersion}
+AppVerName={#MyAppName} {#MyAppVersion}
+AppPublisher={#MyAppPublisher}
+AppPublisherURL={#MyAppURL}
+AppSupportURL={#MyAppURL}
+AppUpdatesURL={#MyAppURL}
+DefaultDirName={pf}\{#MyAppDirName}
+DefaultGroupName={#MyAppName}
+DisableProgramGroupPage=yes
+OutputBaseFilename=ECPRSetup_{#MyAppVersion}_{{ customer_code }}_{{ release_for }}
+SolidCompression=yes
+Compression=lzma
+
+PrivilegesRequired=admin
+ArchitecturesAllowed=x64 ia64
+ArchitecturesInstallIn64BitMode=x64 ia64
+
+DisableReadyPage=yes
+DisableReadyMemo=no
+DisableDirPage=yes
+
+UsePreviousAppDir=no
+
+SetupLogging=yes
+
+InfoBeforeFile="..\scripts\{{ customer_code }}\{{ release_for }}\README.txt"
+
+WizardSmallImageFile="logo\ecpr_logo.bmp"
+
+[Languages]
+Name: "en"; MessagesFile: "compiler:Default.isl"
+
+[Messages]
+SetupWindowTitle=Setup {#ServiceName} ({{ app_version }})
+StatusUninstalling=Uninstalling {#ServiceName} ({{ app_version }}), please waiting until {#ServiceName} ({{ app_version }}) is fully stopped and removed. (in ~ 30 seconds) ...
+
+[Files]
+{% if os_type == 'Linux' %}
+Source: "..\..\CPRPCA\bin\Setup\*"; DestDir: "{app}"; AfterInstall: AfterInstallProc; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\scripts\{{ customer_code }}\*"; DestDir: "{app}"
+{% else %}
+Source: "..\..\CPRPCA\bin\Setup\*"; DestDir: "{app}"; AfterInstall: AfterInstallProc; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\scripts\{{ customer_code }}\{{ release_for }}\*"; DestDir: "{app}"
+Source: "C:\Windows\Fonts\tahoma.ttf"; DestDir: "{fonts}"; FontInstall: "Tahoma"; Flags: onlyifdoesntexist uninsneveruninstall
+{% endif %}
+
+[Run]
+ Filename: "{app}\after_install.bat"; Flags: shellexec runhidden waituntilterminated skipifsilent
+
+[UninstallRun]
+ Filename: "{app}\before_uninstall.bat"; Flags: shellexec runhidden waituntilterminated
+
+[UninstallDelete]
+Type: files; Name: "{app}\*.*"
+
+#include "scripts\products.iss"
+#include "scripts\products\stringversion.iss"
+#include "scripts\products\winversion.iss"
+#include "scripts\products\fileversion.iss"
+#include "scripts\products\dotnetfxversion.iss"
+
+#include "scripts\products\dotnetfx45.iss"
+
+[Code]
+
+procedure SplitString(var Dest: TArrayOfString; Text: String; Separator: String);
+var
+  i, p: Integer;
+begin
+  i := 0;
+  repeat
+    SetArrayLength(Dest, i+1);
+    p := Pos(Separator,Text);
+    if p > 0 then begin
+      Dest[i] := Copy(Text, 1, p-1);
+      Text := Copy(Text, p + Length(Separator), Length(Text));
+      i := i + 1;
+    end else begin
+      Dest[i] := Text;
+      Text := '';
+    end;
+  until Length(Text)=0;
+end;
+
+function InitializeSetup(): boolean;
+begin
+#ifdef use_dotnetfx40
+if (not netfxinstalled(NetFx40Client, '') and not netfxinstalled(NetFx40Full, '')) then
+begin
+   dotnetfx40client();
+end;
+#endif
+  RegDeleteKeyIncludingSubkeys(HKEY_LOCAL_MACHINE, 'SYSTEM\CurrentControlSet\Services\EventLog\{#ServiceName}');
+  Result := True;
+
+  if (DirExists('C:\\Program Files\\{#MyAppDirName}')) then
+  begin
+    MsgBox('{#MyAppName} already installed. Please run update or uninstall it first.', mbCriticalError, MB_OK);
+    Result := False;  
+  end else
+  begin
+    Result := True;
+  end
+
+end;
+
+procedure InitializeWizard;
+begin
+  { Create the pages }  
+end;
+
+const
+data = '<?xml version="1.0" encoding="utf-8" ?>' +
+'<configuration>' +
+'  <appSettings>' +
+'    <add key="ecpr_service_name" value="{#ServiceName}"/>' +
+'    <add key="ecpr_service_description" value="{#ServiceDescription}"/>' +
+'    <add key="ecpr_service_displayname" value="{#ServiceDisplayName}"/>' +
+'    <add key="ecpr_config_url" value="{#ServiceConfigURL}" />' +
+'    <add key="ecpr_is_fetched" value="true" />' +
+'    <add key="ecpr_http_basic_auth_username" value="{#ServiceHTTPBasicAuthUsername}"/>' +
+'    <add key="ecpr_http_basic_auth_password" value="{#ServiceHTTPBasicAuthPassword}"/>' +
+'    <add key="ecpr_customer_code" value="{{ customer_code }}" />' +
+'    <add key="ecpr_customer_environment" value="{{ release_for_code }}" />' +
+'    <add key="AWSAccessKey" value="{{ AWS_S2_ACCESS_KEY_ID }}" />' +
+'    <add key="AWSSecretKey" value="{{ AWS_S2_SECRET_ACCESS_KEY }}" />' +
+'    <add key="AWSRegion" value="us-west-2" />' +
+'  </appSettings>' +
+'</configuration>';
+
+procedure AfterInstallProc;
+begin
+  SaveStringToFile(ExpandConstant('{app}\ECPR.exe.config'), data, False);
+end;
+
+
+function GetUninstallString(): String;
+var
+  sUnInstPath: String;
+  sUnInstallString: String;
+begin
+  sUnInstPath := ExpandConstant('Software\Microsoft\Windows\CurrentVersion\Uninstall\{#emit SetupSetting("AppId")}_is1');
+  sUnInstallString := '';
+  if not RegQueryStringValue(HKLM, sUnInstPath, 'UninstallString', sUnInstallString) then
+    RegQueryStringValue(HKCU, sUnInstPath, 'UninstallString', sUnInstallString);
+  Result := sUnInstallString;
+end;
+
+
+function IsUpgrade(): Boolean;
+begin
+  Result := (GetUninstallString() <> '');
+end;
+
+
+function UnInstallOldVersion(): Integer;
+var
+  sUnInstallString: String;
+  iResultCode: Integer;
+begin
+
+// Return Values:
+// 1 - uninstall string is empty
+// 2 - error executing the UnInstallString
+// 3 - successfully executed the UnInstallString
+
+  // default return value
+  Result := 0;
+
+  // get the uninstall string of the old app
+  sUnInstallString := GetUninstallString();
+  if sUnInstallString <> '' then begin
+    sUnInstallString := RemoveQuotes(sUnInstallString);
+    if Exec(sUnInstallString, '/SILENT /NORESTART /SUPPRESSMSGBOXES','', SW_HIDE, ewWaitUntilTerminated, iResultCode) then
+      Result := 3
+    else
+      Result := 2;
+  end else
+    Result := 1;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if (CurStep=ssInstall) then
+  begin
+    if (IsUpgrade()) then
+    begin
+      UnInstallOldVersion();
+    end;
+  end;
+end;
+
